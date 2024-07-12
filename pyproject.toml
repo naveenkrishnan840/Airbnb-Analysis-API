@@ -1,0 +1,18 @@
+
+[tool.poetry]
+name = "Airbnb-Analysis"
+version = "0.1.0"
+description = "To describe airbnb anlasysis insights"
+license = "MIT"
+authors = [
+    "Navaneethan J naveenkrishnan840@gmail.com",
+]
+maintainers = [
+    "Navaneethan J naveenkrishnan840@gmail.com",
+]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.10"
+streamlit = "1.36.0"
+pymongo = "4.8.0"
