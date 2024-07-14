@@ -4,15 +4,13 @@ name = "Airbnb-Analysis"
 version = "0.1.0"
 description = "To describe airbnb anlasysis insights"
 license = "MIT"
-authors = [
-    "Navaneethan J naveenkrishnan840@gmail.com",
-]
-maintainers = [
-    "Navaneethan J naveenkrishnan840@gmail.com",
-]
+authors = ["Navaneethan <naveenkrishnan840@gmail.com>"]
+maintainers = ["Navaneethan naveenkrishnan840@gmail.com"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.10"
-streamlit = "1.36.0"
-pymongo = "4.8.0"
+python = "^3.10"
+pymongo = "3.12.3"
+fastapi = "^0.88.0"
+pydantic = "^1.10.2"
+uvicorn = "^0.20.0"
