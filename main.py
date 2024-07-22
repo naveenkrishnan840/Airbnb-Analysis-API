@@ -64,7 +64,8 @@ def get_filter_records(request: Request, getFilterRecord: GetFilterRecord,
             for i in getFilterRecord.safety_amenities:
             # safe_amenities = {"$setEquals": ["$amenities", getFilterRecord.safety_amenities]}
                 amenities["$or"].append({"amenities": {"$in": [i]}})
-        db_condition["$and"].append(amenities)
+        if amenities["$or"]:
+            db_condition["$and"].append(amenities)
 
         if getFilterRecord.price_range:
             db_condition["$and"].append({"minimum_night_price": {"$gte": getFilterRecord.price_range[0]}})
@@ -76,20 +77,65 @@ def get_filter_records(request: Request, getFilterRecord: GetFilterRecord,
                 "$addFields": {
                     "price": {"$toInt": "$price"},
                     "review_ratings": {"$toInt": "$review_rating"},
-                    "minimum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$minimum_nights"}]},
-                    "maximum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$maximum_nights"}]},
+                    # "minimum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$minimum_nights"}]},
+                    # "maximum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$maximum_nights"}]},
                     "name_country": {"$concat": ["$name", ", ", "$address.country"]},
                     "thumbnail_url": "$images.picture_url", "review_rating": "$review_scores.review_scores_rating"
             }
             },
             {"$match": db_condition},
             {"$project": {"name_country": 1, "thumbnail_url": 1, "minimum_nights": 1, "maximum_nights": 1, "price": 1,
-                          "minimum_night_price": 1, "maximum_night_price": 1,
-                          # "review_rating": 1
+                          # "minimum_night_price": 1,
+                          # "maximum_night_price": 1,
+                          "review_rating": 1
                           }
             }
         ])
-        result = df.to_dict(orient="records") if not df.empty else []
+        # Property Type group aggregation
+        property_type_group_aggregation = collection_name.aggregate(
+            [
+                {"$addFields": {
+                    "minimum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$minimum_nights"}]},
+                    "maximum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$maximum_nights"}]},
+                }},
+                {"$match": db_condition},
+                {"$group": {"_id": "$property_type", "$minimum_night": {"$min": "$minimum_night"},
+                            "$maximum_night": {"$max": "$maximum_night"}}},
+                {"$sort": {"property_type": 1}}
+            ]
+        )
+        # Country Wise Avg Price
+        country_wise_avg_price = collection_name.aggregate_pandas_all(
+            [
+                {"$addFields": {
+                    "minimum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$minimum_nights"}]},
+                    "maximum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$maximum_nights"}]},
+                }},
+                {"$match": db_condition},
+                {"$group": {"_id": "$address.country", "avg_price": {"$avg": "$price"}}},
+                {"$sort": {"avg_price": -1}}
+            ]
+        )
+        # Room Type group aggregation
+        room_type_group_aggregation = collection_name.aggregate(
+            [
+                {"$addFields": {
+                    "minimum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$minimum_nights"}]},
+                    "maximum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$maximum_nights"}]},
+                }},
+                {"$match": db_condition},
+                {"$group": {"_id": "$room_type", "$minimum_night": {"$min": "$minimum_night"},
+                            "$maximum_night": {"$max": "$maximum_night"}}},
+                {"$sort": {"property_type": 1}}
+            ]
+        )
+
+        result = {
+            "room_type_group_aggregation": list(room_type_group_aggregation),
+            "country_wise_avg_price": country_wise_avg_price.to_dict(orient="records"),
+            "property_type_group_aggregation": list(property_type_group_aggregation),
+            "df": df.to_dict(orient="records") if not df.empty else []
+        }
         print(df)
         print(connection)
         print(getFilterRecord)
