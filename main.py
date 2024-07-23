@@ -68,8 +68,8 @@ def get_filter_records(request: Request, getFilterRecord: GetFilterRecord,
             db_condition["$and"].append(amenities)
 
         if getFilterRecord.price_range:
-            db_condition["$and"].append({"minimum_night_price": {"$gte": getFilterRecord.price_range[0]}})
-            db_condition["$and"].append({"maximum_night_price": {"$lte": getFilterRecord.price_range[1]}})
+            db_condition["$and"].append({"price": {"$gte": getFilterRecord.price_range[0]}})
+            db_condition["$and"].append({"price": {"$lte": getFilterRecord.price_range[1]}})
 
         pymongoarrow.monkey.patch_all()
         df = collection_name.aggregate_pandas_all([
@@ -87,53 +87,48 @@ def get_filter_records(request: Request, getFilterRecord: GetFilterRecord,
             {"$project": {"name_country": 1, "thumbnail_url": 1, "minimum_nights": 1, "maximum_nights": 1, "price": 1,
                           # "minimum_night_price": 1,
                           # "maximum_night_price": 1,
-                          "review_rating": 1
+                          # "review_rating": 1
                           }
             }
         ])
         # Property Type group aggregation
-        property_type_group_aggregation = collection_name.aggregate(
+        property_type_group_aggregation = collection_name.aggregate_pandas_all(
             [
-                {"$addFields": {
-                    "minimum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$minimum_nights"}]},
-                    "maximum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$maximum_nights"}]},
-                }},
+                # {"$addFields": {"minimum_nights": {"$toInt": "$minimum_nights"},
+                #                 "maximum_nights": {"$toInt": "$maximum_nights"}}},
+                {"$addFields": {"price": {"$toInt": "$price"}}},
                 {"$match": db_condition},
-                {"$group": {"_id": "$property_type", "$minimum_night": {"$min": "$minimum_night"},
-                            "$maximum_night": {"$max": "$maximum_night"}}},
+                {"$group": {"_id": "$property_type", "minimum_price": {"$min": "$price"},
+                            "maximum_price": {"$max": "$price"}}},
+                {"$project": {"_id": 1, "minimum_price": 1, "maximum_price": 1}},
                 {"$sort": {"property_type": 1}}
             ]
         )
         # Country Wise Avg Price
         country_wise_avg_price = collection_name.aggregate_pandas_all(
             [
-                {"$addFields": {
-                    "minimum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$minimum_nights"}]},
-                    "maximum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$maximum_nights"}]},
-                }},
+                {"$addFields": {"price": {"$toInt": "$price"}}},
                 {"$match": db_condition},
                 {"$group": {"_id": "$address.country", "avg_price": {"$avg": "$price"}}},
+                {"$project": {"avgPrice": {"$toInt": {"$round": "$avg_price"}}}},
                 {"$sort": {"avg_price": -1}}
             ]
         )
         # Room Type group aggregation
-        room_type_group_aggregation = collection_name.aggregate(
+        room_type_group_aggregation = collection_name.aggregate_pandas_all(
             [
-                {"$addFields": {
-                    "minimum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$minimum_nights"}]},
-                    "maximum_night_price": {"$multiply": [{"$toInt": "$price"}, {"$toInt": "$maximum_nights"}]},
-                }},
+                {"$addFields": {"price": {"$toInt": "$price"}}},
                 {"$match": db_condition},
-                {"$group": {"_id": "$room_type", "$minimum_night": {"$min": "$minimum_night"},
-                            "$maximum_night": {"$max": "$maximum_night"}}},
+                {"$group": {"_id": "$room_type", "minimum_price": {"$min": "$price"},
+                            "maximum_price": {"$max": "$price"}}},
                 {"$sort": {"property_type": 1}}
             ]
         )
 
         result = {
-            "room_type_group_aggregation": list(room_type_group_aggregation),
+            "room_type_group_aggregation": room_type_group_aggregation.to_dict(orient="records"),
             "country_wise_avg_price": country_wise_avg_price.to_dict(orient="records"),
-            "property_type_group_aggregation": list(property_type_group_aggregation),
+            "property_type_group_aggregation": property_type_group_aggregation.to_dict(orient="records"),
             "df": df.to_dict(orient="records") if not df.empty else []
         }
         print(df)
