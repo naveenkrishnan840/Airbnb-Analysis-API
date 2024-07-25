@@ -198,10 +198,10 @@ def get_details(request: Request, getDetails: GetDetails, connection_details: Mo
         connection = connection_details
         database_connection = connection.get_database(name="airbnb_analysis")
         collection_name = database_connection.get_collection("airbnb_main_data")
-        get_data_details = collection_name.find_pandas_all(
+        get_data_details = list(collection_name.find(
             {"_id": getDetails.doc_id}
-        )
-        return HTTPException(status_code=200, detail=get_data_details.to_dict(orient="records"))
+        ))
+        return HTTPException(status_code=200, detail=get_data_details)
     except Exception as e:
         raise e
 
