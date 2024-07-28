@@ -24,7 +24,7 @@ _id = db.get_collection("airbnb_main_data").aggregate_pandas_all([
 ])
 
 
-sel_host_details = pd.DataFrame([ det for ho,det in host.items() for host in host_details], 
+sel_host_details = pd.DataFrame([value for host in host_details for key, value in host.items()], 
              columns=["host_name", "host_response_time", "host_response_rate", "host_is_superhost"])
 
 
