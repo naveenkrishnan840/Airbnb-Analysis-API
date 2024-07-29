@@ -1,7 +1,12 @@
+import os
+
 from pymongo import MongoClient
 import pymongoarrow.monkey
+import pandas as pd
 
-client =MongoClient("mongodb+srv://navaneethan:VP6amlRnbJ9yOZDr@airbnb-analysis.yiorqff.mongodb.net/?retryWrites=true&w=majority&appName=Airbnb-Analysis")
+pymongoarrow.monkey.patch_all()
+client = MongoClient(os.getenv("MONGODB_URL"))
+
 db = client.get_database("airbnb_analysis")
 
 main_det = db.get_collection("airbnb_main_data").aggregate_pandas_all([
@@ -24,11 +29,11 @@ _id = db.get_collection("airbnb_main_data").aggregate_pandas_all([
 ])
 
 
-sel_host_details = pd.DataFrame([value for host in host_details for key, value in host.items()], 
-             columns=["host_name", "host_response_time", "host_response_rate", "host_is_superhost"])
+sel_host_details = pd.DataFrame([value for host in host_details for key, value in host.items()],
+                                columns=["host_name", "host_response_time", "host_response_rate", "host_is_superhost"])
 
 
-sel_host_details["host_is_superhost"]= sel_host_details["host_is_superhost"].apply(lambda x: 1 if x else 0)
+sel_host_details["host_is_superhost"] = sel_host_details["host_is_superhost"].apply(lambda x: 1 if x else 0)
 
 sel_host_details["id"] = _id
 

@@ -6,13 +6,24 @@ import pymongoarrow.monkey
 from database_connection import get_db_session
 from request_frame import GetFilterRecord, GetDetails
 
+from dotenv import load_dotenv
+
 app = FastAPI(title="Airbnb Analysis")
 app.add_middleware(middleware_class=CORSMiddleware, allow_origins=["*"], allow_headers=["*"], allow_methods=["*"])
 
 router = APIRouter()
 
 
+@router.on_event("startup")
+def initial_load():
+    load_dotenv()
+
+
 def get_condition(getFilterRecord):
+    """
+    :param getFilterRecord:
+    :return: db_condition
+    """
     db_condition = {"$and": []}
     property_type_condition = {"property_type": {"$in": getFilterRecord.property}}
     db_condition["$and"].append(property_type_condition)
@@ -67,9 +78,14 @@ def get_condition(getFilterRecord):
 
 
 @router.post("/getFilterRecords")
-# @router.on_event("startup")
 def get_filter_records(request: Request, getFilterRecord: GetFilterRecord,
                        connection_details: MongoClient = Depends(get_db_session)):
+    """
+    :param request:
+    :param getFilterRecord:
+    :param connection_details:
+    :return: Response Records based on Condition
+    """
     try:
         connection = connection_details
         database_connection = connection.get_database(name="airbnb_analysis")
@@ -78,8 +94,9 @@ def get_filter_records(request: Request, getFilterRecord: GetFilterRecord,
         pymongoarrow.monkey.patch_all()
         db_condition = get_condition(getFilterRecord)
 
-        docs_count = int(collection_name.aggregate_pandas_all(
-            [{"$match": db_condition}, {"$project": {"_id": 1}}]).count()[0])
+        docs_count = collection_name.aggregate_pandas_all(
+            [{"$match": db_condition}, {"$project": {"_id": 1}}])
+        docs_count = 0 if docs_count.empty else int(docs_count.count()[0])
 
         df = collection_name.aggregate_pandas_all([
             {
@@ -160,6 +177,12 @@ def get_filter_records(request: Request, getFilterRecord: GetFilterRecord,
 @router.post("/showMoreRecords")
 def show_more_records(request: Request, getFilterRecord: GetFilterRecord,
                       connection_details: MongoClient = Depends(get_db_session)):
+    """
+    :param request:
+    :param getFilterRecord:
+    :param connection_details:
+    :return: Response Records based on Condition
+    """
     try:
         connection = connection_details
         database_connection = connection.get_database(name="airbnb_analysis")
@@ -194,6 +217,12 @@ def show_more_records(request: Request, getFilterRecord: GetFilterRecord,
 
 @router.post("/getDetails")
 def get_details(request: Request, getDetails: GetDetails, connection_details: MongoClient = Depends(get_db_session)):
+    """
+    :param request:
+    :param getDetails:
+    :param connection_details:
+    :return: Response Single Record
+    """
     try:
         connection = connection_details
         database_connection = connection.get_database(name="airbnb_analysis")
