@@ -1,5 +1,6 @@
 # Airbnb Data Visualization
   ## Based on Airbnb data to create user interface single application and data visulization chart and separate power Bi visulization in power bi desktop 
+  ## Domain: Travel Industry, Property Management and Tourism 
 
 ## Tech Stack:
   - Frontend:
@@ -16,8 +17,6 @@
       - PyMongoArrow
       - pandas
       - uviocorn
-
-## FinTech
 
 In The Project we have Streamlit used to build the Geo India Map Location application responsively
 
