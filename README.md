@@ -17,6 +17,7 @@
       - PyMongoArrow
       - pandas
       - uviocorn
+      - dotenv
 
 In This project we have Reactjs as frontend, fastapi as backend used to build User interface single application responsively.
 
