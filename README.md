@@ -2,7 +2,20 @@
   ## Based on Airbnb data to create user interface single application and data visulization chart and separate power Bi visulization in power bi desktop 
 
 ## Tech Stack:
-  
+  - Frontend:
+      - JavaScript
+      - Reactjs
+      - Material UI
+      - Tailwindcss
+      - React leafet Map
+      - Material UI charts
+  - Backend:
+      - Python
+      - FastApi
+      - Maongodb
+      - PyMongoArrow
+      - pandas
+      - uviocorn
 
 ## FinTech
 
